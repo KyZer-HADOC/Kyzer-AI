@@ -1,30 +1,14 @@
 import React, { useEffect, useState } from "react";
 import {
-  Send,
-  Paperclip,
-  Plus,
-  Settings,
-  Plug,
-  Zap,
-  ChevronDown,
-  Menu,
-  X,
-  Loader2,
+  Send, Paperclip, Plus, Settings, Plug, Zap,
+  ChevronDown, Menu, X, Loader2, KeyRound
 } from "lucide-react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
 
 const models = [
-  "Auto",
-  "Agent",
-  "GPT-5.6",
-  "Claude Sonnet",
-  "Claude Opus",
-  "Gemini",
-  "Nano Banana",
-  "Grok",
-  "DeepSeek",
-  "Qwen",
+  "Auto","Agent","GPT-5.6","Claude Sonnet","Claude Opus",
+  "Gemini","Nano Banana","Grok","DeepSeek","Qwen"
 ];
 
 const defaultChats = [
@@ -32,7 +16,7 @@ const defaultChats = [
   "Fix Fabric error",
   "Create AI website",
   "Aura SMP setup",
-  "JARVIS AI",
+  "JARVIS AI"
 ];
 
 function App() {
@@ -40,7 +24,17 @@ function App() {
   const [text, setText] = useState("");
   const [mobile, setMobile] = useState(false);
   const [open, setOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const [keys, setKeys] = useState(() => ({
+    openai: localStorage.getItem("kyzer_openai_key") || "",
+    anthropic: localStorage.getItem("kyzer_anthropic_key") || "",
+    gemini: localStorage.getItem("kyzer_gemini_key") || "",
+    xai: localStorage.getItem("kyzer_xai_key") || "",
+    deepseek: localStorage.getItem("kyzer_deepseek_key") || "",
+    qwen: localStorage.getItem("kyzer_qwen_key") || ""
+  }));
 
   const [messages, setMessages] = useState(() => {
     try {
@@ -71,6 +65,31 @@ function App() {
     );
   }, [recentChats]);
 
+  const saveKey = (provider, value) => {
+    setKeys((prev) => ({ ...prev, [provider]: value }));
+
+    if (value) {
+      localStorage.setItem(`kyzer_${provider}_key`, value);
+    } else {
+      localStorage.removeItem(`kyzer_${provider}_key`);
+    }
+  };
+
+  const clearKeys = () => {
+    Object.keys(keys).forEach((provider) => {
+      localStorage.removeItem(`kyzer_${provider}_key`);
+    });
+
+    setKeys({
+      openai: "",
+      anthropic: "",
+      gemini: "",
+      xai: "",
+      deepseek: "",
+      qwen: ""
+    });
+  };
+
   const newChat = () => {
     setMessages([]);
     setText("");
@@ -80,34 +99,35 @@ function App() {
     const prompt = text.trim();
     if (!prompt || loading) return;
 
-    const userMessage = {
-      role: "user",
-      content: prompt,
-    };
+    const nextMessages = [
+      ...messages,
+      { role: "user", content: prompt }
+    ];
 
-    const nextMessages = [...messages, userMessage];
     setMessages(nextMessages);
     setText("");
     setLoading(true);
 
-    const newTitle =
-      prompt.length > 34 ? `${prompt.slice(0, 34)}...` : prompt;
+    const title =
+      prompt.length > 34
+        ? `${prompt.slice(0, 34)}...`
+        : prompt;
 
-    setRecentChats((prev) => [
-      newTitle,
-      ...prev.filter((x) => x !== newTitle),
-    ].slice(0, 12));
+    setRecentChats((prev) =>
+      [title, ...prev.filter((x) => x !== title)].slice(0, 12)
+    );
 
     try {
       const response = await fetch("/.netlify/functions/chat", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           model,
           messages: nextMessages,
-        }),
+          keys
+        })
       });
 
       const data = await response.json();
@@ -123,16 +143,16 @@ function App() {
         {
           role: "assistant",
           content: data.reply || "No response received.",
-          provider: data.provider,
-        },
+          provider: data.provider
+        }
       ]);
     } catch (error) {
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: `⚠️ ${error.message}`,
-        },
+          content: `⚠️ ${error.message}`
+        }
       ]);
     } finally {
       setLoading(false);
@@ -171,10 +191,7 @@ function App() {
           <button
             className="chat"
             key={chat}
-            onClick={() => {
-              setText(chat);
-              setMobile(false);
-            }}
+            onClick={() => setText(chat)}
           >
             {chat}
           </button>
@@ -187,7 +204,10 @@ function App() {
           Connectors
         </button>
 
-        <button className="chat">
+        <button
+          className="chat"
+          onClick={() => setSettingsOpen(true)}
+        >
           <Settings size={16} />
           Settings
         </button>
@@ -201,14 +221,19 @@ function App() {
 
       <main>
         <header>
-          <button className="hamb" onClick={() => setMobile(true)}>
+          <button
+            className="hamb"
+            onClick={() => setMobile(true)}
+          >
             <Menu />
           </button>
 
           <div>
             <strong>{model}</strong>
             <span className="mode">
-              {model === "Agent" ? " agent mode" : " model"}
+              {model === "Agent"
+                ? " agent mode"
+                : " model"}
             </span>
           </div>
 
@@ -216,7 +241,13 @@ function App() {
             <span className="status">
               ● {loading ? "Thinking..." : "Online"}
             </span>
-            <Settings size={19} />
+
+            <button
+              className="iconBtn"
+              onClick={() => setSettingsOpen(true)}
+            >
+              <Settings size={19} />
+            </button>
           </div>
         </header>
 
@@ -224,11 +255,10 @@ function App() {
           {messages.length === 0 ? (
             <div className="welcome">
               <div className="orb">✦</div>
-
               <h1>What can I help you build?</h1>
-
               <p>
-                One workspace for your AI models, tools, files and agents.
+                One workspace for your AI models,
+                tools, files and agents.
               </p>
 
               <div className="cards">
@@ -242,7 +272,9 @@ function App() {
 
                 <button
                   onClick={() =>
-                    setText("Analyze my GitHub project")
+                    setText(
+                      "Analyze my GitHub project"
+                    )
                   }
                 >
                   Analyze my GitHub
@@ -262,7 +294,9 @@ function App() {
               {messages.map((message, index) => (
                 <div className="msg" key={index}>
                   <div className="avatar">
-                    {message.role === "user" ? "U" : "K"}
+                    {message.role === "user"
+                      ? "U"
+                      : "K"}
                   </div>
 
                   <div className="msgBody">
@@ -284,7 +318,10 @@ function App() {
                   <div className="avatar">K</div>
                   <div className="msgBody">
                     <div className="msgText loadingText">
-                      <Loader2 className="spin" size={18} />
+                      <Loader2
+                        className="spin"
+                        size={18}
+                      />
                       Thinking...
                     </div>
                   </div>
@@ -310,14 +347,16 @@ function App() {
                 <div className="models">
                   {models.map((item) => (
                     <button
+                      key={item}
                       className={
-                        item === model ? "selected" : ""
+                        item === model
+                          ? "selected"
+                          : ""
                       }
                       onClick={() => {
                         setModel(item);
                         setOpen(false);
                       }}
-                      key={item}
                     >
                       {item}
                     </button>
@@ -328,7 +367,9 @@ function App() {
 
             <textarea
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) =>
+                setText(e.target.value)
+              }
               onKeyDown={handleKeyDown}
               placeholder="Ask anything..."
               disabled={loading}
@@ -339,15 +380,22 @@ function App() {
                 <Paperclip size={18} />
               </button>
 
-              <span>Shift + Enter for new line</span>
+              <span>
+                Shift + Enter for new line
+              </span>
 
               <button
                 className="send"
                 onClick={send}
-                disabled={loading || !text.trim()}
+                disabled={
+                  loading || !text.trim()
+                }
               >
                 {loading ? (
-                  <Loader2 className="spin" size={18} />
+                  <Loader2
+                    className="spin"
+                    size={18}
+                  />
                 ) : (
                   <Send size={18} />
                 )}
@@ -356,13 +404,112 @@ function App() {
           </div>
 
           <footer>
-            AI can make mistakes. Connect your tools to let KYZER AI
-            work with your projects.
+            KYZER AI — Bring Your Own Key
           </footer>
         </div>
       </main>
+
+      {settingsOpen && (
+        <div
+          className="settingsOverlay"
+          onClick={() =>
+            setSettingsOpen(false)
+          }
+        >
+          <div
+            className="settingsModal"
+            onClick={(e) =>
+              e.stopPropagation()
+            }
+          >
+            <div className="settingsHead">
+              <div>
+                <h2>Bring Your Own Key</h2>
+                <p>
+                  Your keys are stored in this
+                  browser and sent with your
+                  requests.
+                </p>
+              </div>
+
+              <button
+                onClick={() =>
+                  setSettingsOpen(false)
+                }
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {[
+              ["openai", "OpenAI", "sk-..."],
+              [
+                "anthropic",
+                "Anthropic",
+                "sk-ant-..."
+              ],
+              ["gemini", "Google Gemini", "AIza..."],
+              ["xai", "xAI / Grok", "xai-..."],
+              [
+                "deepseek",
+                "DeepSeek",
+                "sk-..."
+              ],
+              [
+                "qwen",
+                "Qwen / DashScope",
+                "sk-..."
+              ]
+            ].map(
+              ([provider, label, placeholder]) => (
+                <label
+                  className="keyField"
+                  key={provider}
+                >
+                  <span>
+                    <KeyRound size={14} />
+                    {label}
+                  </span>
+
+                  <input
+                    type="password"
+                    value={keys[provider]}
+                    placeholder={placeholder}
+                    onChange={(e) =>
+                      saveKey(
+                        provider,
+                        e.target.value
+                      )
+                    }
+                  />
+                </label>
+              )
+            )}
+
+            <div className="settingsActions">
+              <button
+                className="danger"
+                onClick={clearKeys}
+              >
+                Clear keys
+              </button>
+
+              <button
+                className="saveBtn"
+                onClick={() =>
+                  setSettingsOpen(false)
+                }
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-createRoot(document.getElementById("root")).render(<App />);
+createRoot(
+  document.getElementById("root")
+).render(<App />);
